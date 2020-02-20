@@ -1,0 +1,157 @@
+def test123(fname1):
+    start = time.clock()
+    #from matplotlib import pyplot as plt
+    data = pd.read_csv(fname1)
+    f1 = data['X'].tolist()
+    f2 = data['Y'].tolist()
+    f3 = data['capacity'].tolist()
+    VC = data['vehicle_capacity'].tolist()
+    VC = VC[0]
+
+    item = [0]*len(f1)
+    for i in range(0,len(f1)):
+        item[i] = [i-1,f1[i],f2[i],f3[i],0]
+
+    depot = item.pop(0)
+    G =[0]*2
+    for i in range(0,len(item)):
+        G[0] = item[i][1]/len(item) + G[0] 
+        G[1] = item[i][2]/len(item) + G[1]
+
+
+
+    def Get_Distance_Reverse(list1 , point):
+
+        for i in range(0,len(list1)):
+            list1[i][4] = (math.sqrt((list1[i][1]-point[0])**2 + (list1[i][2]-point[1])**2))
+        
+        list2 = sorted(list1 , key=lambda tup: tup[4], reverse = True)
+    
+        return list2
+
+    def Get_Distance(list1 , point):
+        for i in range(0,len(list1)):
+            list1[i][4] = (math.sqrt((list1[i][1]-point[0])**2 + (list1[i][2]-point[1])**2))
+        
+        #print(list1)
+        list2 = sorted(list1 , key=lambda tup: tup[4])
+        
+        return list2 
+
+    def Get_Gravity(list1):
+        Grav = [0]*2    
+        for i in range(0 , len(list1)):
+            Grav[0] = list1[i][1]/len(list1) + Grav[0]
+            Grav[1] = list1[i][2]/len(list1) + Grav[1]
+        return Grav
+
+
+    def get_Gravity1(list1):
+        grav = [[],[]]
+        for i in range(0,len(list1)):
+            temp = 0
+            temp1 = 0
+            for j in range(0,len(list1[i])):
+                temp = list1[i][j][1]/len(list1[i]) + temp
+                temp1 = list1[i][j][2]/len(list1[i]) + temp1
+            grav[0].append(temp)
+            grav[1].append(temp1)
+        
+        return grav
+
+
+    def get_AllDistance(list1 , grav):                    #找出每個需求點與所有重心的距離
+        Q=[]
+        for i in range(0,len(list1)):
+                for j in range(0,len(grav[1])):
+                    Q.append(math.sqrt((list1[i][1]-grav[0][j])**2 + (list1[i][2]-grav[1][j])**2))
+        
+        distance = [(Q[i:i+len(grav[1])])  for i in range(0,len(Q),len(grav[1]))]
+        sort = []
+        for i in range(0,len(distance)):
+            sort.append(sorted(range(len(distance[i])), key=lambda k: distance[i][k]))
+
+        return(distance,sort)
+    
+    def get_FinalGravity(list1):
+        grav = [[],[]]
+        for i in range(0,len(list1)):
+            temp = 0
+            temp1 = 0
+            for j in range(1,len(list1[i])):
+                temp = list1[i][j][1]/(len(list1[i])-1) + temp
+                temp1 = list1[i][j][2]/(len(list1[i])-1) + temp1
+            grav[0].append(temp)
+            grav[1].append(temp1)
+
+        return grav
+    
+    def cap123(list1):
+        cap = 0 
+        for i in range(len(list1)):
+            cap = list1[i][3] + cap
+        return cap
+    
+    def allcap(list1):
+        allcap1 = []
+        
+        for i in range(len(list1)):
+            temp = 0
+            for j in range(len(list1[i])):
+                temp = list1[i][j][3] + temp
+            allcap1.append(temp)
+        return allcap1
+
+    Distance_list  = Get_Distance_Reverse(item , G)
+    
+
+    count = 0
+    cluster_list = []
+    G_list = []
+    while len(Distance_list) != 0:
+        cap = Distance_list[0][3]
+        G_list.append(Distance_list.pop(0))
+        G1 = [0]*2
+        G1[0] = G_list[count][1] 
+        G1[1] = G_list[count][2]
+
+        temp100 = []
+        newClu = True
+        if(len(Distance_list)== 0):
+            for i in range(len(cluster_list)):
+                
+                if(cap123(cluster_list[i]) + G_list[len(G_list)-1][3] <= VC ):
+                    cluster_list[i].append(G_list[len(G_list)-1])
+                    newClu = False
+                    break
+                
+
+        if(len(Distance_list)== 0):
+            if(newClu==False):
+                break
+            temp100.append(G_list[len(G_list)-1])
+          
+            cluster_list.append(temp100)
+            break
+        Distance_list1 = Get_Distance(Distance_list,G1)
+        temp_list = []
+        temp_list.append(G_list[count])
+        
+        while cap + Distance_list1[0][3] <= VC:
+            
+            cap = cap + Distance_list1[0][3]
+            temp_list.append(Distance_list1.pop(0))
+            G1 = Get_Gravity(temp_list)
+            Distance_list1 = Get_Distance(Distance_list1,G1)
+            if(len(Distance_list1) == 0):
+                break   
+        
+        cluster_list.append(temp_list)
+        
+        if(len(Distance_list1)==0):
+            break
+
+        Distance_list = Get_Distance_Reverse(Distance_list1,G)
+        
+    
+        count = count+1
